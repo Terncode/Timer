@@ -88,6 +88,7 @@ export class DateTimePicker extends React.Component<Props, State> {
 
     updateTime = (event: React.ChangeEvent<HTMLInputElement>) => {
         this.setState({time: event.target.value});
+        this.emitChange();
     }
 
     updateDate = (event: React.ChangeEvent<HTMLInputElement>) => {
