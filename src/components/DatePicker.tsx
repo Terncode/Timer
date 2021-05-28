@@ -87,7 +87,10 @@ export class DateTimePicker extends React.Component<Props, State> {
     }
 
     updateTime = (event: React.ChangeEvent<HTMLInputElement>) => {
-        this.setState({time: event.target.value});
+        const value = event.target.value;
+        const time = value.split(':').length === 2 ? `${value}:00` : value;  
+
+        this.setState({time});
         this.emitChange();
     }
 
@@ -137,7 +140,7 @@ export class DateTimePicker extends React.Component<Props, State> {
          </div>
 
          Start Timer
-         <Input type="time" value={this.state.time} onChange={this.updateTime}/>
+         <Input type="time" step="1" value={this.state.time} onChange={this.updateTime}/>
          <Input type="date" value={this.state.date} onChange={this.updateDate}/>
 
         <div>
