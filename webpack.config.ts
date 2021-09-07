@@ -13,6 +13,7 @@ const config: Configuration = {
   devtool: DEV ? "inline-source-map" : false,
   entry: {
     index: "./src/index",
+    worker: "./src/webworker"
   },
   output: {
     path: path.join(__dirname, "public"),
@@ -21,25 +22,6 @@ const config: Configuration = {
   },
   resolve: {
     extensions: [".js", ".ts", ".tsx"],
-  },
-  optimization: {
-    minimize: !DEV,
-    splitChunks: {
-      cacheGroups: {
-        vendors: {
-          test: /[\\/]node_modules[\\/]/,
-          name: "vendors",
-          chunks: "all",
-          priority: 10,
-        },
-        material: {
-          test: /[\\/]node_modules[\\/]@material-ui[\\/]/,
-          name: "material-ui",
-          chunks: "all",
-          priority: 20,
-        },
-      },
-    },
   },
   module: {
     rules: [
@@ -61,20 +43,8 @@ const config: Configuration = {
         },
       },
       {
-        test: /\.scss$/,
-        use: ["style-loader", "css-loader", "sass-loader"],
-      },
-      {
-        test: /.jpe?g$|.gif$|.png$|.svg$|.woff$|.woff2$|.ttf$|.eot$/,
-        use: "url-loader?limit=10000",
-      },
-      {
-        test: /\.css$/,
-        use: ["style-loader", "css-loader"],
-      },
-      {
-        test: /\.ttf$/,
-        use: ["file-loader"],
+        test: /\.worker\.js$/,
+        use: { loader: "worker-loader" },
       },
     ],
   },

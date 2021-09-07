@@ -6,7 +6,7 @@
     "sourceMap": true,
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
-    "isolatedModules": true,
+    "isolatedModules": false,
     "outDir": "../public",
     "lib": ["ES2019", "DOM"],
     "types": [],
