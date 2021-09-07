@@ -18,6 +18,7 @@ interface Props {
 }
 
 export class App extends React.Component<Props, State> {
+    private worker: Worker;
     constructor(props:Props) {
         super(props);
         const date = new Date();
@@ -33,6 +34,7 @@ export class App extends React.Component<Props, State> {
     }
 
     async componentDidMount()  {
+        this.worker = new Worker('worker.js');
         const url = new URL(window.location.href);
         const searchParams = new URLSearchParams(url.search);
         let set = false
@@ -42,27 +44,55 @@ export class App extends React.Component<Props, State> {
                 const output = await decompress(value);
                 const raw = JSON.parse(output) as Data;;
                 if (raw.date) {
+                    const date = new Date(raw.date);
                     this.setState({
-                        date: new Date(raw.date),
+                        date,
                         endMessage: raw.endMessage,
                         title: raw.title,
                         editable: false,
                     });
+                    document.title = raw.title;
                     set = true;
+
+                    if (date.getTime() < Date.now()) {
+                        return;
+                    }
+                    
+                    let notification = false;
+                    const result = confirm("Do you want to be reminded?")
+                    if (result) {
+                        if (Notification.permission !== "granted") {
+                            try {
+                                const result = await Notification.requestPermission()
+                                if (result === "granted") {
+                                    notification = true;
+                                }
+                            } catch (error) {
+                                console.error(error);
+                            }
+                        } else {
+                            notification = true;
+                        }
+                    }
+
+                    this.worker.addEventListener("message", () => {
+                        document.title = raw.endMessage;
+                    })
+                    this.worker.postMessage({date: raw.date, notification, title: raw.endMessage});
                 }
             } catch (error) {
+                console.error(error);
                 console.error("Unable to decode");
             }
         }
         if(!set) {
-            console.log("e")
             this.setState({editable: true})
         }
 
     }
 
     componentWillUnmount() {
-    
+        this.worker.terminate();
     } 
     updateDate = (date:Date) => {
         this.setState({ date })
