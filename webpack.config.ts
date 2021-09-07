@@ -13,7 +13,7 @@ const config: Configuration = {
   devtool: DEV ? "inline-source-map" : false,
   entry: {
     index: "./src/index",
-    worker: "./src/webworker"
+    worker: "./src/worker"
   },
   output: {
     path: path.join(__dirname, "public"),
