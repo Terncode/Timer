@@ -59,21 +59,23 @@ export class App extends React.Component<Props, State> {
                     }
                     
                     let notification = false;
-                    const result = confirm("Do you want to be reminded?")
-                    if (result) {
-                        if (Notification.permission !== "granted") {
-                            try {
-                                const result = await Notification.requestPermission()
-                                if (result === "granted") {
-                                    notification = true;
+                    (async () => {
+                        const result = confirm("Do you want to be reminded?")
+                        if (result) {
+                            if (Notification.permission !== "granted") {
+                                try {
+                                    const result = await Notification.requestPermission()
+                                    if (result === "granted") {
+                                        notification = true;
+                                    }
+                                } catch (error) {
+                                    console.error(error);
                                 }
-                            } catch (error) {
-                                console.error(error);
+                            } else {
+                                notification = true;
                             }
-                        } else {
-                            notification = true;
                         }
-                    }
+                    })()
 
                     this.worker.addEventListener("message", () => {
                         document.title = raw.endMessage;
