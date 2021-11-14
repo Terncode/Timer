@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { Data, DateTimePicker } from './DatePicker'
 import { Time } from "./Time";
 import { decompress } from "shrink-string"
+import { Popup } from "./popup";
 
 
 interface State {
@@ -11,6 +12,7 @@ interface State {
     endMessage: string;
     editable: boolean;
     previewEnd: boolean;
+    reminderPopup: boolean;
 }
 
 interface Props {
@@ -19,6 +21,7 @@ interface Props {
 
 export class App extends React.Component<Props, State> {
     private worker: Worker;
+    private raw: Data;
     constructor(props:Props) {
         super(props);
         const date = new Date();
@@ -30,6 +33,7 @@ export class App extends React.Component<Props, State> {
             title: 'Start Message',
             editable: false,
             previewEnd: false,
+            reminderPopup: false,
         }
     }
 
@@ -39,48 +43,26 @@ export class App extends React.Component<Props, State> {
         const searchParams = new URLSearchParams(url.search);
         let set = false
         if (searchParams.has("d")) {
-            const value = searchParams.get("d");  
+            const value = getCustomQueryData("d");
             try {
                 const output = await decompress(value);
-                const raw = JSON.parse(output) as Data;;
-                if (raw.date) {
-                    const date = new Date(raw.date);
+                this.raw = JSON.parse(output) as Data;;
+                if (this.raw.date) {
+                    const date = new Date(this.raw.date);
                     this.setState({
                         date,
-                        endMessage: raw.endMessage,
-                        title: raw.title,
+                        endMessage: this.raw.endMessage,
+                        title: this.raw.title,
                         editable: false,
+                        reminderPopup: true,
                     });
-                    document.title = raw.title;
+                    document.title = this.raw.title;
                     set = true;
 
                     if (date.getTime() < Date.now()) {
                         return;
                     }
-                    
-                    let notification = false;
-                    (async () => {
-                        const result = confirm("Do you want to be reminded?")
-                        if (result) {
-                            if (Notification.permission !== "granted") {
-                                try {
-                                    const result = await Notification.requestPermission()
-                                    if (result === "granted") {
-                                        notification = true;
-                                    }
-                                } catch (error) {
-                                    console.error(error);
-                                }
-                            } else {
-                                notification = true;
-                            }
-                        }
-                    })()
-
-                    this.worker.addEventListener("message", () => {
-                        document.title = raw.endMessage;
-                    })
-                    this.worker.postMessage({date: raw.date, notification, title: raw.endMessage});
+    
                 }
             } catch (error) {
                 console.error(error);
@@ -122,12 +104,62 @@ export class App extends React.Component<Props, State> {
         </>
     }
 
+    get renderPopup() {
+        if(this.state.reminderPopup) {
+            return <Popup 
+            message="Do you want to be reminded?"
+            option={{
+                text: "Yes",
+                onClick: async () => {
+                    this.setState({reminderPopup: false})
+                    let notification = false;
+                    if (Notification.permission !== "granted") {
+                        try {
+                            const result = await Notification.requestPermission()
+                            if (result === "granted") {
+                                notification = true;
+                            }
+                        } catch (error) {
+                            console.error(error);
+                        }
+                    } else {
+                        notification = true;
+                    }
+                    this.worker.addEventListener("message", () => {
+                        document.title = this.raw.endMessage;
+                    })
+                    this.worker.postMessage({date: this.raw.date, notification, title: this.raw.endMessage});
+
+                }
+            }} 
+            option2={{
+                text: "No",
+                onClick: () => {
+                    this.setState({reminderPopup: false});
+                }
+            }} 
+            
+            />
+        } 
+        return null;
+    }
+
     render() {
      return <>
-
+        {this.renderPopup}
         {this.datePicker()}
         <Time date={this.state.date} title={this.state.title} endMessage={this.state.endMessage} end={this.state.previewEnd}/>
      </> 
     }
 }
 
+// Should give us raw query data
+function getCustomQueryData(letter: string) {
+    const search = location.search;
+    const questionMarkIndex = search.indexOf('?');
+    const actualSearch = search.slice(questionMarkIndex + 1);
+    if (actualSearch.startsWith(`${letter}=`)) {
+        return actualSearch.slice(2)
+    }
+    return undefined;
+}
